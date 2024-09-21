@@ -21,7 +21,7 @@ public class BulkGenerateLinksWorker(
 
         var owner = waxOptions.Value.Account;
         var accountAssets =
-            await atomicAssetsClient.GetAccountAssets(atomicAssetsOptions.Value.TemplateId, owner, 50, cancellationToken: stoppingToken);
+            await atomicAssetsClient.GetAccountAssets(atomicAssetsOptions.Value.TemplateId, owner, cancellationToken: stoppingToken);
         var startedAt =
             DateTimeOffset.UtcNow - TimeSpan.FromMinutes(5); // offset by 5m to account for any possible skew
         var linkRecords = new List<AtomicToolsLinkRecord>();

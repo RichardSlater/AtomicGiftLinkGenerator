@@ -48,18 +48,21 @@ public abstract class AtomicAssetHttpClientBase<T>(IHttpClientFactory clientFact
             if (node == null) {
                 exception = new InvalidOperationException($"The call to {uri} succeeded, but no result was returned.");
                 logger.LogWarning(exception.Message);
+                continue;
             }
 
-            if (node!["success"] == null || node["data"] == null) {
+            if (node["success"] == null || node["data"] == null) {
                 exception = new InvalidOperationException(
                     $"The call to {uri} succeeded, but the results did not contain the expected payload. Expected: {{ \"success\": true, \"data\": [ ... ] }}");
                 logger.LogWarning(exception.Message);
+                continue;
             }
 
             if (!node["success"]!.GetValue<bool>()) {
                 exception = new InvalidOperationException(
                     $"The call to {uri} succeeded, but the payload indicates failure.");
                 logger.LogWarning(exception.Message);
+                continue;
             }
 
             return node;
