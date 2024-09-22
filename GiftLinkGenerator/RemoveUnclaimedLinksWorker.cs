@@ -10,7 +10,9 @@ public class RemoveUnclaimedLinksWorker(
     ILogger<RemoveUnclaimedLinksWorker> logger,
     IAtomicAssetsClient atomicAssetsClient,
     IAtomicToolsClient atomicToolsClient,
-    IOptions<WaxOptions> waxOptions) : BackgroundService {
+    IOptions<WaxOptions> waxOptions,
+    CancelUnclaimedCommandLineOptions commandLineOptions
+    ) : BackgroundService {
     protected override async Task ExecuteAsync(CancellationToken stoppingToken) {
         if (logger.IsEnabled(LogLevel.Information))
             logger.LogInformation("Worker running at: {time}", DateTimeOffset.Now);
@@ -18,10 +20,13 @@ public class RemoveUnclaimedLinksWorker(
         var owner = waxOptions.Value.Account;
         var links = await atomicAssetsClient.GetAccountLinks(owner, [LinkState.Created, LinkState.Waiting],
             cancellationToken: stoppingToken);
-        var giftLinks = links as AtomicToolsGiftLink[] ?? links.ToArray();
 
+        var filteredGiftLinks = commandLineOptions.LinkId > 0
+            ? links.Where(x => x.LinkId == commandLineOptions.LinkId.ToString()).ToArray()
+            : links as AtomicToolsGiftLink[] ?? links.ToArray();
+        
         var dirty = false;
-        foreach (var link in giftLinks) {
+        foreach (var link in filteredGiftLinks) {
             logger.LogInformation("Removing unclaimed link: {link} ({assetIds})", link.LinkId,
                 string.Join(", ", link.Assets.Select(x => x.AssetId)));
             var result = await atomicToolsClient.CancelLink(link);

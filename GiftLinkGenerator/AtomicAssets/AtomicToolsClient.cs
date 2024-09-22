@@ -4,6 +4,8 @@ using EosSharp;
 using EosSharp.Core.Api.v1;
 using EosSharp.Core.Exceptions;
 using EosSharp.Core.Helpers;
+using GetPass;
+using GiftLinkGenerator.Crypto;
 using GiftLinkGenerator.Wax;
 using Microsoft.Extensions.Options;
 using Action = EosSharp.Core.Api.v1.Action;
@@ -12,14 +14,16 @@ namespace GiftLinkGenerator.AtomicAssets;
 
 public class AtomicToolsClient(
     ILogger<AtomicToolsClient> logger,
+    IWalletService walletService,
     IOptions<WaxOptions> waxOptions,
     IOptions<AtomicAssetsOptions> atomicAssetsOptions,
     IHttpClientFactory httpClientFactory) : AtomicAssetHttpClientBase<AtomicToolsClient>(httpClientFactory, logger), IAtomicToolsClient {
     private readonly AtomicAssetsOptions _atomicAssetsOptions = atomicAssetsOptions.Value;
-    private readonly Eos _wax = new(waxOptions.Value.GetConfigurator());
     private readonly ILogger<AtomicToolsClient> _logger = logger;
 
     public async Task<AtomicToolsLinkRecord> AnnounceDeposit(AtomicAsset asset) {
+        var wax = await GetWaxConfigurator();
+
         var keyPair = CryptoHelper.GenerateKeyPair();
         var atomicGiftLink = new AtomicToolsLinkRecord {
             AssetId = asset.AssetId,
@@ -34,7 +38,7 @@ public class AtomicToolsClient(
         };
 
         try {
-            var result = await _wax.CreateTransaction(new Transaction { actions = actions });
+            var result = await wax.CreateTransaction(new Transaction { actions = actions });
             _logger.LogInformation("Transaction broadcast: {txnId}", result);
 
             atomicGiftLink.TransactionId = result;
@@ -55,13 +59,36 @@ public class AtomicToolsClient(
         return atomicGiftLink;
     }
 
+    private async Task<Eos> GetWaxConfigurator() {
+        var options = waxOptions.Value;
+
+        string? privateKey;
+        if (string.IsNullOrWhiteSpace(options.PrivateKey)) {
+            if (!await walletService.TestActor(options.Actor, options.Permission)) {
+                _logger.LogError("Private key was not available from either configuration nor the wallet.");
+                throw new InvalidOperationException();
+            }
+
+            var password = ConsolePasswordReader.Read("Enter password to unlock wallet:");
+            privateKey = await walletService.GetPrivateKey(options.Actor, options.Permission, password);
+        }
+        else {
+            privateKey = options.PrivateKey;
+        }
+        
+        Eos wax = new(waxOptions.Value.GetConfigurator(privateKey));
+        return wax;
+    }
+
     public async Task<bool> CancelLink(AtomicToolsGiftLink atomicGiftLink) {
+        var wax = await GetWaxConfigurator();
+
         var actions = new List<Action> {
             GetCancelLink(atomicGiftLink)
         };
 
         try {
-            var result = await _wax.CreateTransaction(new Transaction { actions = actions });
+            var result = await wax.CreateTransaction(new Transaction { actions = actions });
             _logger.LogInformation("Transaction broadcast: {txnId}", result);
             return true;
         }

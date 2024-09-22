@@ -14,8 +14,10 @@
     </PropertyGroup>
 
     <ItemGroup>
+        <PackageReference Include="CommandLineParser" Version="2.9.1" />
         <PackageReference Include="CsvHelper" Version="33.0.1"/>
         <PackageReference Include="eos-sharp-2.0" Version="2.2.3"/>
+        <PackageReference Include="GetPass" Version="1.0.0" />
         <PackageReference Include="Microsoft.Extensions.Configuration.UserSecrets" Version="8.0.0"/>
         <PackageReference Include="Microsoft.Extensions.Hosting" Version="8.0.0"/>
         <PackageReference Include="Microsoft.Extensions.Http" Version="8.0.0"/>

@@ -2,7 +2,10 @@
 
 using System.Globalization;
 using CsvHelper;
+using EosSharp;
+using GetPass;
 using GiftLinkGenerator.AtomicAssets;
+using GiftLinkGenerator.Crypto;
 using GiftLinkGenerator.Wax;
 using Microsoft.Extensions.Options;
 
@@ -14,19 +17,32 @@ public class BulkGenerateLinksWorker(
     IAtomicToolsClient atomicToolsClient,
     IOptions<AtomicAssetsOptions> atomicAssetsOptions,
     IOptions<WaxOptions> waxOptions,
-    IOptions<OutputOptions> outputOptions) : BackgroundService {
+    IOptions<OutputOptions> outputOptions,
+    DefaultCommandLineOptions commandLineOptions
+) : BackgroundService {
     protected override async Task ExecuteAsync(CancellationToken stoppingToken) {
         if (logger.IsEnabled(LogLevel.Information))
             logger.LogInformation("Worker running at: {time}", DateTimeOffset.Now);
 
+        if (commandLineOptions.Limit < 0) {
+            logger.LogError("Invalid --limit, it should be greater than 0");
+            return;
+        }
+
+        var templateId = commandLineOptions.TemplateId > 0
+            ? commandLineOptions.TemplateId
+            : atomicAssetsOptions.Value.TemplateId;
+
         var owner = waxOptions.Value.Account;
         var accountAssets =
-            await atomicAssetsClient.GetAccountAssets(atomicAssetsOptions.Value.TemplateId, owner, cancellationToken: stoppingToken);
+            await atomicAssetsClient.GetAccountAssets(templateId, owner, cancellationToken: stoppingToken);
         var startedAt =
             DateTimeOffset.UtcNow - TimeSpan.FromMinutes(5); // offset by 5m to account for any possible skew
         var linkRecords = new List<AtomicToolsLinkRecord>();
 
-        foreach (var asset in accountAssets) {
+        var limit = commandLineOptions.Limit > 0 ? commandLineOptions.Limit : int.MaxValue;
+
+        foreach (var asset in accountAssets.Take(limit)) {
             logger.LogInformation("Processing template Asset#{asset}: {name} (mint#{mint})", asset.AssetId,
                 asset.Name, asset.Mint);
 
@@ -59,7 +75,7 @@ public class BulkGenerateLinksWorker(
             linkRecord.LinkId = link.LinkId;
             linkRecord.Status = LinkStatus.Success;
 
-            logger.LogInformation("Asset (ID#{assetId} has a Link Id {linkId}, generating private link.",
+            logger.LogInformation("Asset ID#{assetId} has a Link Id {linkId}, generating private link.",
                 linkRecord.AssetId, link.LinkId);
 
             linkRecord.GiftLinkUri = atomicToolsClient.BuildGiftLinkUri(linkRecord.LinkId, linkRecord.GiftPrivateKey);
