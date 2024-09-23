@@ -46,7 +46,7 @@ jobs:
         uses: vers-one/dotnet-project-version-updater@v1.6
         with:
           file: "${{ env.PROJECT_PATH }}"
-          version: ${{ github.event.inputs.version }}
+          version: ${{ steps.version.outputs.version }}
 
       - name: Build and archive outputs
         run: |
