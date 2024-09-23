@@ -66,13 +66,13 @@ jobs:
 
       - name: Create Release
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           VERSION=${{ steps.version.outputs.version }}
           gh release create "v$VERSION" --title "Release $VERSION" --notes "Automated release."
 
       - name: Upload Additional Files
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           gh release upload "v${{ steps.version.outputs.version }}" "${{ env.ARCHIVE_PATH }}"
