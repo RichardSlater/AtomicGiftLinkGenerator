@@ -1,5 +1,7 @@
 # Atomic Tools Gift Link Generator
 
+[![CI/CD](https://github.com/RichardSlater/AtomicGiftLinkGenerator/actions/workflows/dotnet.yml/badge.svg)](https://github.com/RichardSlater/AtomicGiftLinkGenerator/actions/workflows/dotnet.yml)
+
 > [!NOTE]
 > This is a fairly simple project built to help someone automate a mundane task, it is not designed to be comprehensive or complete. You are however welcome to use it, steal code from it, train an AI with the code or submit pull requests.
 
