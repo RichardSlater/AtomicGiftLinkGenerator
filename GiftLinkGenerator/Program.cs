@@ -5,7 +5,9 @@ using GiftLinkGenerator;
 using GiftLinkGenerator.AtomicAssets;
 using GiftLinkGenerator.Crypto;
 using GiftLinkGenerator.Wax;
+using GiftLinkGenerator.Workers;
 using Serilog;
+using Serilog.Filters;
 
 var builder = Host.CreateApplicationBuilder(args);
 
@@ -17,6 +19,8 @@ builder.Logging.ClearProviders();
 builder.Logging.AddSerilog();
 
 Log.Logger = new LoggerConfiguration()
+    .Filter.ByExcluding(Matching.FromSource("System.Net.Http.HttpClient"))
+    .Filter.ByExcluding(Matching.FromSource("Microsoft.Hosting.Lifetime"))
     .Enrich.FromLogContext()
     .WriteTo.Console()
     .CreateLogger();

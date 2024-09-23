@@ -1,6 +1,6 @@
 ﻿// SPDX-License-Identifier: MIT
 
-namespace GiftLinkGenerator;
+namespace GiftLinkGenerator.AtomicAssets;
 
 public enum LinkStatus {
     Failed,

@@ -35,7 +35,7 @@ public class CryptoService(IOptions<CryptoOptions> options) : ICryptoService {
         return Convert.ToBase64String(ciphertext);
     }
 
-    public string? Decrypt(string ciphertext, string password) {
+    public string Decrypt(string ciphertext, string password) {
         var ciphertextBytes = Convert.FromBase64String(ciphertext);
 
         if (ciphertextBytes[16] != 33) {

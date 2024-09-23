@@ -6,6 +6,7 @@ using EosSharp.Core.Exceptions;
 using EosSharp.Core.Helpers;
 using GetPass;
 using GiftLinkGenerator.Crypto;
+using GiftLinkGenerator.Exceptions;
 using GiftLinkGenerator.Wax;
 using Microsoft.Extensions.Options;
 using Action = EosSharp.Core.Api.v1.Action;
@@ -17,7 +18,8 @@ public class AtomicToolsClient(
     IWalletService walletService,
     IOptions<WaxOptions> waxOptions,
     IOptions<AtomicAssetsOptions> atomicAssetsOptions,
-    IHttpClientFactory httpClientFactory) : AtomicAssetHttpClientBase<AtomicToolsClient>(httpClientFactory, logger), IAtomicToolsClient {
+    IHttpClientFactory httpClientFactory
+    ) : AtomicAssetHttpClientBase<AtomicToolsClient>(httpClientFactory, logger), IAtomicToolsClient {
     private readonly AtomicAssetsOptions _atomicAssetsOptions = atomicAssetsOptions.Value;
     private readonly ILogger<AtomicToolsClient> _logger = logger;
     private string? _privateKey;
@@ -46,11 +48,23 @@ public class AtomicToolsClient(
             atomicGiftLink.Status = LinkStatus.Announced;
         }
         catch (ApiErrorException ex) {
-            foreach (var error in ex.error.details)
-                _logger.LogError("{message}: {file}:{line} ({method})", error.message, error.file, error.line_number,
-                    error.method);
-
             atomicGiftLink.Status = LinkStatus.Failed;
+
+            foreach (var error in ex.error.details) {
+                switch (error.method) {
+                    case "validate_account_cpu_usage_estimate":
+                    case "validate_cpu_usage_to_bill":
+                    case "validate_account_cpu_usage":
+                    case "validate_ram_usage":
+                        _logger.LogCritical("{message}: {file}:{line} ({method})", error.message, error.file, error.line_number,
+                            error.method);
+                        throw new OutOfResourcesException($"{error.message}: {error.file}:{error.line_number} ({error.method})");
+                    default:
+                        _logger.LogError("{message}: {file}:{line} ({method})", error.message, error.file, error.line_number,
+                            error.method);
+                        break;
+                }
+            }
         }
         catch (ApiException ex) {
             _logger.LogError("An API exception was thrown while cancelling the link: {content}", ex.Content);

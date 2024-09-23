@@ -2,14 +2,12 @@
 
 using System.Globalization;
 using CsvHelper;
-using EosSharp;
-using GetPass;
 using GiftLinkGenerator.AtomicAssets;
-using GiftLinkGenerator.Crypto;
+using GiftLinkGenerator.Exceptions;
 using GiftLinkGenerator.Wax;
 using Microsoft.Extensions.Options;
 
-namespace GiftLinkGenerator;
+namespace GiftLinkGenerator.Workers;
 
 public class BulkGenerateLinksWorker(
     ILogger<BulkGenerateLinksWorker> logger,
@@ -18,7 +16,8 @@ public class BulkGenerateLinksWorker(
     IOptions<AtomicAssetsOptions> atomicAssetsOptions,
     IOptions<WaxOptions> waxOptions,
     IOptions<OutputOptions> outputOptions,
-    DefaultCommandLineOptions commandLineOptions
+    DefaultCommandLineOptions commandLineOptions,
+    IHostApplicationLifetime applicationLifetime
 ) : BackgroundService {
     protected override async Task ExecuteAsync(CancellationToken stoppingToken) {
         if (logger.IsEnabled(LogLevel.Information))
@@ -28,6 +27,8 @@ public class BulkGenerateLinksWorker(
             logger.LogError("Invalid --limit, it should be greater than 0");
             return;
         }
+        
+        await Task.Delay(TimeSpan.FromSeconds(0.5), stoppingToken);
 
         var templateId = commandLineOptions.TemplateId > 0
             ? commandLineOptions.TemplateId
@@ -43,12 +44,18 @@ public class BulkGenerateLinksWorker(
         var limit = commandLineOptions.Limit > 0 ? commandLineOptions.Limit : int.MaxValue;
 
         foreach (var asset in accountAssets.Take(limit)) {
-            logger.LogInformation("Processing template Asset#{asset}: {name} (mint#{mint})", asset.AssetId,
-                asset.Name, asset.Mint);
+            logger.LogInformation("Processing template Asset# {asset}, Template: {template}: \"{name}\" #{mint}",
+                asset.AssetId, asset.TemplateId, asset.Name, asset.Mint);
 
-            var result = await atomicToolsClient.AnnounceDeposit(asset);
-
-            linkRecords.Add(result);
+            try {
+                var result = await atomicToolsClient.AnnounceDeposit(asset);
+                linkRecords.Add(result);
+            }
+            catch (OutOfResourcesException) {
+                logger.LogError(
+                    "Account out of resources, can not meaningfully continue broadcasting transactions. Skipping remaining assets and generating links for broadcast transactions.");
+                break;
+            }
         }
 
         logger.LogInformation("Pausing for 10 seconds to wait for indexer to run.");
@@ -101,6 +108,6 @@ public class BulkGenerateLinksWorker(
 
         await Task.Delay(1000, stoppingToken);
 
-        logger.LogInformation("All done, press Ctrl+C / Cmd+C to exit.");
+        applicationLifetime.StopApplication();
     }
 }
