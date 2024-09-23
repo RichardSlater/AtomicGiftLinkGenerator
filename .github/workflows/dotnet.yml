@@ -75,4 +75,4 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release upload "v${{ steps.version.outputs.version }}" "${{ env.ARCHIVE_PATH }}"
+          gh release upload "v${{ steps.version.outputs.version }}" "${{ env.ARCHIVE_PATH }}"/*
