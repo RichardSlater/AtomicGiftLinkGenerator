@@ -7,6 +7,7 @@
         <UserSecretsId>dotnet-GiftLinkGenerator-6b9a105e-f82f-4234-9a06-c389d47b2891</UserSecretsId>
         <AssemblyName>giftlinkgen</AssemblyName>
         <ApplicationIcon>application-icon.ico</ApplicationIcon>
+        <RuntimeIdentifiers>win-x64;win-arm64;linux-x64;linux-arm64;osx-x64;osx-arm64</RuntimeIdentifiers>
         <Company>Richard Slater</Company>
         <Product>Gift Link Generator</Product>
         <AssemblyVersion>0.1.0</AssemblyVersion>
