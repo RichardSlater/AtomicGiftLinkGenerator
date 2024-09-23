@@ -51,6 +51,9 @@ jobs:
             dotnet build ${{ env.PROJECT_PATH }} --configuration Release --runtime $rid --no-restore
           done
 
+          pwd
+          ll
+
           # zip windows
           for rid in "win-x64" "win-arm64"
           do
