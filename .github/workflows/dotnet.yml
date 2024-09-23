@@ -9,8 +9,8 @@ on:
 env:
   PROJECT_PATH: GiftLinkGenerator/GiftLinkGenerator.csproj
   OUTPUT_PATH: GiftLinkGenerator/bin/Release/net8.0
-  ZIP_PATH: dist/
-  ZIP_PREFIX: AtomicGiftLinkGenerator_
+  ARCHIVE_PATH: dist/
+  ARCHIVE_PREFIX: AtomicGiftLinkGenerator_
 
 jobs:
   deploy:
@@ -39,92 +39,43 @@ jobs:
         with:
           dotnet-version: 8.0.x
 
+      - name: Install GitHub CLI
+        uses: actions/setup-gh-cli@v1
+
       - name: Restore Project
         run: dotnet restore ${{ env.PROJECT_PATH }}
 
       - name: Build and zip outputs
         run: |
           mkdir ${{ env.ZIP_PATH }}
+          
+          # build
           for rid in "win-x64" "win-arm64" "linux-x64" "linux-arm64" "osx-x64" "osx-arm64"
           do
             dotnet build ${{ env.PROJECT_PATH }} --configuration Release --runtime $rid --no-restore
-            zip -r ${{ env.ZIP_PATH }}${{ env.ZIP_PREFIX }}${{ steps.version.outputs.version }}-$rid.zip ${{ env.OUTPUT_PATH }}/$rid > /dev/null
+          done
+
+          # zip windows
+          for rid in "win-x64" "win-arm64"
+          do
+            zip -r ${{ env.ARCHIVE_PATH }}${{ env.ARCHIVE_PREFIX }}${{ steps.version.outputs.version }}-$rid.zip ${{ env.OUTPUT_PATH }}/$rid > /dev/null
+          done
+
+          # tarball linux and osx
+          for rid in "linux-x64" "linux-arm64" "osx-x64" "osx-arm64"
+          do
+            tar -czvf ${{ env.ARCHIVE_PATH }}${{ env.ARCHIVE_PREFIX }}${{ steps.version.outputs.version }}-$rid.tar.gz ${{ env.OUTPUT_PATH }}/$rid > /dev/null
           done
 
       - name: Create Release
-        uses: actions/create-release@v1
-        id: create_release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: v${{ steps.version.outputs.version }}
-          release_name: ${{ steps.version.outputs.version }}
-          draft: false
-          prerelease: false
+        run: |
+          VERSION=${{ steps.version.outputs.version }}
+          gh release create "v$VERSION" --title "Release $VERSION" --notes "Automated release."
 
-      - name: Upload Release Asset (win-x64)
-        id: upload-release-asset-win-x64
-        uses: actions/upload-release-asset@v1
+      - name: Upload Additional Files
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ${{ env.ZIP_PATH }}${{ env.ZIP_PREFIX }}${{ steps.version.outputs.version }}-win-x64.zip
-          asset_name: ${{ env.ZIP_PREFIX }}${{ steps.version.outputs.version }}-win-x64.zip
-          asset_content_type: application/zip
-
-      - name: Upload Release Asset (win-arm64)
-        id: upload-release-asset-win-arm64
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ${{ env.ZIP_PATH }}${{ env.ZIP_PREFIX }}${{ steps.version.outputs.version }}-win-arm64.zip
-          asset_name: ${{ env.ZIP_PREFIX }}${{ steps.version.outputs.version }}-win-arm64.zip
-          asset_content_type: application/zip
-
-      - name: Upload Release Asset (linux-x64)
-        id: upload-release-asset-linux-x64
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ${{ env.ZIP_PATH }}${{ env.ZIP_PREFIX }}${{ steps.version.outputs.version }}-linux-x64.zip
-          asset_name: ${{ env.ZIP_PREFIX }}${{ steps.version.outputs.version }}-linux-x64.zip
-          asset_content_type: application/zip
-
-      - name: Upload Release Asset (linux-arm64)
-        id: upload-release-asset-linux-arm64
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ${{ env.ZIP_PATH }}${{ env.ZIP_PREFIX }}${{ steps.version.outputs.version }}-linux-arm64.zip
-          asset_name: ${{ env.ZIP_PREFIX }}${{ steps.version.outputs.version }}-linux-arm64.zip
-          asset_content_type: application/zip
-
-      - name: Upload Release Asset (osx-x64)
-        id: upload-release-asset-osx-x64
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ${{ env.ZIP_PATH }}${{ env.ZIP_PREFIX }}${{ steps.version.outputs.version }}-osx-x64.zip
-          asset_name: ${{ env.ZIP_PREFIX }}${{ steps.version.outputs.version }}-osx-x64.zip
-          asset_content_type: application/zip
-
-      - name: Upload Release Asset (osx-arm64)
-        id: upload-release-asset-osx-arm64
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ${{ env.ZIP_PATH }}${{ env.ZIP_PREFIX }}${{ steps.version.outputs.version }}-osx-arm64.zip
-          asset_name: ${{ env.ZIP_PREFIX }}${{ steps.version.outputs.version }}-osx-arm64.zip
-          asset_content_type: application/zip
-
+        run: |
+          gh release upload "v${{ steps.version.outputs.version }}" "${{ env.ARCHIVE_PATH }}"
