@@ -43,7 +43,7 @@ jobs:
 
       - name: Build and zip outputs
         run: |
-          DIST_DIR="$(pwd)/${{ env.ARCHIVE_PATH }}
+          DIST_DIR="$(pwd)/${{ env.ARCHIVE_PATH }}"
           mkdir $DIST_DIR
           
           # build
