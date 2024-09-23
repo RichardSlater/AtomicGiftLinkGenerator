@@ -2,21 +2,58 @@
 
 [![CI/CD](https://github.com/RichardSlater/AtomicGiftLinkGenerator/actions/workflows/dotnet.yml/badge.svg)](https://github.com/RichardSlater/AtomicGiftLinkGenerator/actions/workflows/dotnet.yml)
 
+Atomic Tools Gift Link Generator (`giftlinkgen`) is a simple tool to generate AtomicHub Gift Links that allow a NFT to be gifted to someone, these links can be generated in bulk then used in giveaways on Discord or Twitch.
+
 > [!NOTE]
 > This is a fairly simple project built to help someone automate a mundane task, it is not designed to be comprehensive or complete. You are however welcome to use it, steal code from it, train an AI with the code or submit pull requests.
 
+## Installation
+
+Binaries are available for Windows, Mac and Linux from the [Releases](https://github.com/RichardSlater/AtomicGiftLinkGenerator/releases) there is no installer. You can download the ZIP or tar.gz for your platform and expand. Ensure that you change the version number in the commands below and that you have [.NET 8](https://dotnet.microsoft.com/en-us/download) installed.
+
+### Windows
+
+> [!NOTE]
+> Use a recent version of Powershell (pwsh) **not** Windows Powershell or `cmd`.
+
+```powershell
+Invoke-WebRequest -Uri https://github.com/RichardSlater/AtomicGiftLinkGenerator/releases/download/v0.2.12/AtomicGiftLinkGenerator_0.2.12-win-x64.zip -OutFile AtomicGiftLinkGenerator_0.2.12-win-x64.zip
+Expand-Archive ./AtomicGiftLinkGenerator_0.2.12-win-x64.zip
+cd ./AtomicGiftLinkGenerator_0.2.12-win-x64
+./giftlinkgen generate
+```
+```
+### Mac / Linux
+
+```bash
+mkdir atomicgiftlink && cd atomicgiftlink
+wget https://github.com/RichardSlater/AtomicGiftLinkGenerator/releases/download/v0.2.12/AtomicGiftLinkGenerator_0.2.12-linux-x64.tar.gz
+tar -xvzf ./AtomicGiftLinkGenerator_0.2.12-linux-x64.tar.gz
+k
+./giftlinkgen generate
+```
+
 ## Usage
 
-There are only two modes, the first is executing `giftlinkgen.exe` with no parameters which will read all the information from `appsettings.json` in the same folder as the executable.
+There are four verbs, allowing gift links to be created and removed plus a very basic wallet to allow a private key to be saved locally encrypted with a password:
 
-The second mode must be used with care, and thus you must execute it with the command line parameter `giftlinkgen.exe cancel-unclaimed` which will cancel **all** gift links for that account regardless of the template ID *including any which have been sent but not claimed*. This is mostly useful for testing or to clean out an account.
+- `generate`: the default, thus can be executed with `giftlinkgen` will read data from `appsettings.json` and attempt to generate a gift link for each NFT matching the Template ID in the account. A CSV file will be created in `~/` containing all of the Gift Links along with the Asset ID and other attributes.
+  - `--limit`, `-l`: limit the number of Gift Links created in one go using the `--limit n` parameter where `n` is an number, the only practical limit is the amount of CPU, NET and RAM the account has access to.
+  - `--template`, `-t`: override the template specified in `appsettings.json`
+- `cancel-unclaimed`: by default will cancel all unclaimed links on the account, use this command with care.
+  - `--linkId`, `-l`: cancel a specific link
+- `add-wallet`: accepts two required options, `--actor` and `--permission`, and will provide an interactive prompt to enter the private key and a password to encrypt the private key with.
+- `delete-wallet`: accepts two required options, `--actor` and `--permission`, this will delete a saved wallet.
 
 > [!WARNING]
-> There is no way to re-do a cancelled gift-link, it will invalidate any link already sent out as they will be published with new key pairs. You can however issue a new gift-link for the same asset.
+> There is no way to re-do a cancelled gift-link, it will invalidate any links already sent out, however it does allow you to reclaim the RAM spent on unclaimed links.
+
+> [!NOTE]
+> Wallets are stored as a JSON file in `~/.config/giftlinkgen_wallet.json`, each time the file is written a backup is created. Individual Private Keys are encrypted using AES and a key generated from the password using PBKDF2.
 
 ## Tool Configuration
 
-The vast majority of the settings in `appsettings.json` are configured as required to work on WAX, change these if you need to change behavior:
+The vast majority of the settings in `appsettings.json` are configured as required to work on WAX, change these if you need to change chains, contracts, etc.:
 
 - **`$.Wax.Account`** - the name of the account that contains the NFTs that you want to create into gift-links.
 - **`$.Wax.Actor`** - **normally** the same as the Account, however if using account-based permissions it is different. (Advanced)
@@ -39,16 +76,91 @@ You can configure custom permissions using [WaxBlock](https://waxblock.io/wallet
 
 ### Secret Configuration
 
-This tool requires access to your secret key, I assume by this point you have read the above important information about secret keys.
+This tool requires access to your private key, I assume by this point you have read the above important information about private keys.
 
-You can put your private key in this file:
+#### Interactive Mode
 
+First save your private key in the wallet store:
+
+```
+./giftlinkgen add-wallet --actor tip.scetrov --permission tips
+```
+
+> [!NOTE]
+> Keys should be in the original EOS format, if you need to convert them then Anchor Wallet has a converter in the Tools menu.
+
+You will be promoted for a private key and a password.
+
+Second make sure `appsettings.json` contains the same actor/account and permission which should be in the same folders as `giftlinkgen`, you may also want to update the `GiftMemo`, `OutputFile` and `TemplateId`:
+
+```json
+{
+  "Logging": {
+    "LogLevel": {
+      "Default": "Information",
+      "Microsoft.Hosting.Lifetime": "Information"
+    }
+  },
+  "Wax": {
+    "Account": "tip.scetrov",
+    "Actor": "tip.scetrov",
+    "GiftContract": "atomictoolsx",
+    "AtomicAssetsContract": "atomicassets",
+    "Permission": "tips",
+    "BaseUri": "https://wax.eosusa.io",
+    "ChainId": "1064487b3cd1a897ce03ae5b6a865651747e2e152090f99c1d19d44e01aea5a4",
+    "ExpireSeconds": 120,
+    "GiftMemo": "FROM SCETROV WITH LOVE"
+  },
+  "Output": {
+    "OutputFile": "~/gift-links.csv"
+  },
+  "Crypto": {
+    "HashAlgorithm": "SHA256",
+    "Iterations": 10000,
+    "Salt": "I1&!6nMG"
+  },
+  "AtomicAssets": {
+    "BaseUri": "https://wax.eosusa.io",
+    "AtomicToolsBaseUri": "https://wax.atomichub.io",
+    "TemplateId": 713712,
+    "Endpoints": {
+      "AtomicMarket": {
+        "Assets": "/atomicmarket/v1/assets"
+      },
+      "AtomicAssets": {
+        "Assets": "/atomicassets/v1/assets"
+      },
+      "AtomicTools": {
+        "Links": "/atomictools/v1/links",
+        "TradingLinks": "/trading/link"
+      }
+    }
+  }
+}
+```
+Finally run `./giftlinkgen generate` or simply:
+
+```
+./giftlinkgen
+```
+
+#### Headless Mode
+
+> [!WARNING]
+> Only file-system access controls protect this file, it is **NOT** encrypted.
+
+You can put your private key in this file if you don't want to enter your password each time you can put the private key in the following location:
+
+**Windows**: 
 ```
 ~\AppData\Roaming\Microsoft\UserSecrets\dotnet-GiftLinkGenerator-6b9a105e-f82f-4234-9a06-c389d47b2891\secrets.json
 ```
 
-> [!WARNING]
-> Only file-system access controls protect this file, it is **NOT** encrypted.
+Linux:Mac:
+```
+~/.microsoft/usersecrets/6b9a105e-f82f-4234-9a06-c389d47b2891/secrets.json
+```
 
 The format of the file is as follows:
 
@@ -62,6 +174,19 @@ The format of the file is as follows:
 > [!NOTE]
 > Keys should be in the original EOS format, if you need to convert them then Anchor Wallet has a converter in the Tools menu.
 
+## Examples
+
+### Generate five Gift Links using a specific template ID
+
+```
+./giftlinkgen generate --limit 5 --template 713714
+```
+
+This will generate a CSV file containing five gift links, for the template `713714` (Warsaken Loot 5,000)
+
+## Issues / Support
+
+If you have issues or you find bugs, please report them via [Issues](https://github.com/RichardSlater/AtomicGiftLinkGenerator/issues).
 
 ## Attribution
 

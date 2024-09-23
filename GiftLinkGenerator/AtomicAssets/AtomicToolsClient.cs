@@ -20,6 +20,7 @@ public class AtomicToolsClient(
     IHttpClientFactory httpClientFactory) : AtomicAssetHttpClientBase<AtomicToolsClient>(httpClientFactory, logger), IAtomicToolsClient {
     private readonly AtomicAssetsOptions _atomicAssetsOptions = atomicAssetsOptions.Value;
     private readonly ILogger<AtomicToolsClient> _logger = logger;
+    private string? _privateKey;
 
     public async Task<AtomicToolsLinkRecord> AnnounceDeposit(AtomicAsset asset) {
         var wax = await GetWaxConfigurator();
@@ -61,8 +62,15 @@ public class AtomicToolsClient(
 
     private async Task<Eos> GetWaxConfigurator() {
         var options = waxOptions.Value;
+        var pk = await GetPrivateKey(options);
+        return new(waxOptions.Value.GetConfigurator(pk));
+    }
 
-        string? privateKey;
+    private async Task<string> GetPrivateKey(WaxOptions options) {
+        if (_privateKey is not null) {
+            return _privateKey;
+        } 
+        
         if (string.IsNullOrWhiteSpace(options.PrivateKey)) {
             if (!await walletService.TestActor(options.Actor, options.Permission)) {
                 _logger.LogError("Private key was not available from either configuration nor the wallet.");
@@ -70,14 +78,16 @@ public class AtomicToolsClient(
             }
 
             var password = ConsolePasswordReader.Read("Enter password to unlock wallet:");
-            privateKey = await walletService.GetPrivateKey(options.Actor, options.Permission, password);
+            _privateKey = await walletService.GetPrivateKey(options.Actor, options.Permission, password);
+
+            if (_privateKey is not null) return _privateKey;
+            
+            _logger.LogError("Failed to get private key");
+            throw new InvalidOperationException();
         }
-        else {
-            privateKey = options.PrivateKey;
-        }
-        
-        Eos wax = new(waxOptions.Value.GetConfigurator(privateKey));
-        return wax;
+
+        _privateKey = options.PrivateKey;
+        return _privateKey;
     }
 
     public async Task<bool> CancelLink(AtomicToolsGiftLink atomicGiftLink) {
