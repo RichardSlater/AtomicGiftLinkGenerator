@@ -28,7 +28,6 @@ jobs:
         with:
           version_format: "${major}.${minor}.${patch}"
           bump_each_commit: true
-          bump_each_commit_patch_pattern: "(PATCH)"
           major_pattern: "(MAJOR)"
           minor_pattern: "(MINOR)"
           change_path: ""
