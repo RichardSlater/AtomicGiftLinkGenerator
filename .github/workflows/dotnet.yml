@@ -41,7 +41,7 @@ jobs:
       - name: Restore Project
         run: dotnet restore ${{ env.PROJECT_PATH }}
 
-      - name: Build and zip outputs
+      - name: Build and archive outputs
         run: |
           DIST_DIR="$(pwd)/${{ env.ARCHIVE_PATH }}"
           mkdir $DIST_DIR
@@ -51,9 +51,6 @@ jobs:
           do
             dotnet build ${{ env.PROJECT_PATH }} --configuration Release --runtime $rid --no-restore
           done
-
-          pwd
-          ll
 
           # zip windows
           for rid in "win-x64" "win-arm64"
