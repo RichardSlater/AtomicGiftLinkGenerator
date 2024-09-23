@@ -15,8 +15,10 @@ public class RemoveUnclaimedLinksWorker(
     IHostApplicationLifetime applicationLifetime
     ) : BackgroundService {
     protected override async Task ExecuteAsync(CancellationToken stoppingToken) {
-        if (logger.IsEnabled(LogLevel.Information))
+        if (logger.IsEnabled(LogLevel.Information)) {
             logger.LogInformation("Worker running at: {time}", DateTimeOffset.Now);
+            applicationLifetime.StopApplication();
+        }
         
         await Task.Delay(TimeSpan.FromSeconds(0.5), stoppingToken);
 

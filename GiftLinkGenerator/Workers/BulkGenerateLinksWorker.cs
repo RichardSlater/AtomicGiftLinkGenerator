@@ -20,11 +20,15 @@ public class BulkGenerateLinksWorker(
     IHostApplicationLifetime applicationLifetime
 ) : BackgroundService {
     protected override async Task ExecuteAsync(CancellationToken stoppingToken) {
-        if (logger.IsEnabled(LogLevel.Information))
+        if (logger.IsEnabled(LogLevel.Information)) {
             logger.LogInformation("Worker running at: {time}", DateTimeOffset.Now);
+            applicationLifetime.StopApplication();
+            return;
+        }
 
         if (commandLineOptions.Limit < 0) {
             logger.LogError("Invalid --limit, it should be greater than 0");
+            applicationLifetime.StopApplication();
             return;
         }
         

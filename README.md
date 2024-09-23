@@ -22,7 +22,7 @@ Expand-Archive ./AtomicGiftLinkGenerator_0.2.17-win-x64.zip
 cd ./AtomicGiftLinkGenerator_0.2.17-win-x64
 ./giftlinkgen generate
 ```
-```
+
 ### Mac / Linux
 
 ```bash
@@ -190,5 +190,5 @@ If you have issues or you find bugs, please report them via [Issues](https://git
 
 ## Attribution
 
-Application Icon [by Howieart](https://www.svgrepo.com/author/Howieart/) (License: CC-BY)
-[Eos-Sharp-2.0](https://github.com/Saltant/Eos-Sharp-2.0) has been invaluable (License: MIT)
+- Application Icon [by Howieart](https://www.svgrepo.com/author/Howieart/) (License: CC-BY)
+- [Eos-Sharp-2.0](https://github.com/Saltant/Eos-Sharp-2.0) has been invaluable (License: MIT)
