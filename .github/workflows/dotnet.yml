@@ -54,13 +54,17 @@ jobs:
           # zip windows
           for rid in "win-x64" "win-arm64"
           do
-            zip -rJ ${{ env.ARCHIVE_PATH }}${{ env.ARCHIVE_PREFIX }}${{ steps.version.outputs.version }}-$rid.zip ${{ env.OUTPUT_PATH }}/$rid > /dev/null
+            pushd ${{ env.OUTPUT_PATH }}/$rid
+            zip -rJ ${{ env.ARCHIVE_PATH }}${{ env.ARCHIVE_PREFIX }}${{ steps.version.outputs.version }}-$rid.zip . > /dev/null
+            popd
           done
 
           # tarball linux and osx
           for rid in "linux-x64" "linux-arm64" "osx-x64" "osx-arm64"
           do
-            tar -czvf ${{ env.ARCHIVE_PATH }}${{ env.ARCHIVE_PREFIX }}${{ steps.version.outputs.version }}-$rid.tar.gz -C ${{ env.OUTPUT_PATH }}/$rid > /dev/null
+            pushd ${{ env.OUTPUT_PATH }}/$rid
+            tar -czvf ${{ env.ARCHIVE_PATH }}${{ env.ARCHIVE_PREFIX }}${{ steps.version.outputs.version }}-$rid.tar.gz . > /dev/null
+            popd
           done
 
       - name: Create Release
