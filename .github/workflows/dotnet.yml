@@ -39,9 +39,6 @@ jobs:
         with:
           dotnet-version: 8.0.x
 
-      - name: Install GitHub CLI
-        uses: actions/setup-gh-cli@v1
-
       - name: Restore Project
         run: dotnet restore ${{ env.PROJECT_PATH }}
 
