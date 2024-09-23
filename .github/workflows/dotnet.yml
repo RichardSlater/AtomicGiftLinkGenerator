@@ -43,7 +43,8 @@ jobs:
 
       - name: Build and zip outputs
         run: |
-          mkdir ${{ env.ARCHIVE_PATH }}
+          DIST_DIR="$(pwd)/${{ env.ARCHIVE_PATH }}
+          mkdir $DIST_DIR
           
           # build
           for rid in "win-x64" "win-arm64" "linux-x64" "linux-arm64" "osx-x64" "osx-arm64"
@@ -58,7 +59,7 @@ jobs:
           for rid in "win-x64" "win-arm64"
           do
             pushd ${{ env.OUTPUT_PATH }}/$rid
-            zip -rJ ${{ env.ARCHIVE_PATH }}${{ env.ARCHIVE_PREFIX }}${{ steps.version.outputs.version }}-$rid.zip .
+            zip -rJ ${DIST_DIR}${{ env.ARCHIVE_PREFIX }}${{ steps.version.outputs.version }}-$rid.zip .
             popd
           done
 
@@ -66,7 +67,7 @@ jobs:
           for rid in "linux-x64" "linux-arm64" "osx-x64" "osx-arm64"
           do
             pushd ${{ env.OUTPUT_PATH }}/$rid
-            tar -czvf ${{ env.ARCHIVE_PATH }}${{ env.ARCHIVE_PREFIX }}${{ steps.version.outputs.version }}-$rid.tar.gz .
+            tar -czvf ${DIST_DIR}${{ env.ARCHIVE_PREFIX }}${{ steps.version.outputs.version }}-$rid.tar.gz .
             popd
           done
 
