@@ -5,11 +5,21 @@ using GiftLinkGenerator;
 using GiftLinkGenerator.AtomicAssets;
 using GiftLinkGenerator.Crypto;
 using GiftLinkGenerator.Wax;
+using Serilog;
 
 var builder = Host.CreateApplicationBuilder(args);
 
 builder.Configuration
     .AddUserSecrets<Program>();
+
+// logging
+builder.Logging.ClearProviders();
+builder.Logging.AddSerilog();
+
+Log.Logger = new LoggerConfiguration()
+    .Enrich.FromLogContext()
+    .WriteTo.Console()
+    .CreateLogger();
 
 // extensions
 builder.Services.AddHttpClient();
@@ -27,6 +37,7 @@ builder.Services.AddScoped<IAtomicToolsClient, AtomicToolsClient>();
 builder.Services.AddScoped<ICryptoService, CryptoService>();
 builder.Services.AddScoped<IWalletService, WalletService>();
 
+// route commands
 Parser.Default
     .ParseArguments<DefaultCommandLineOptions, CancelUnclaimedCommandLineOptions, AddWalletCommandLineOptions,
         DeleteWalletCommandLineOptions>(args)
