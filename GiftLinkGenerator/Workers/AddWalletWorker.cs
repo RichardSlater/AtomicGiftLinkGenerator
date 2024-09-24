@@ -23,6 +23,9 @@ public class AddWalletWorker(
         var privateKey = ConsolePasswordReader.Read("Enter the private key, and press enter:");
         var password = ConsolePasswordReader.Read("Enter the password, and press enter:");
         await walletService.AddAccount(commandLineOptions.Actor, commandLineOptions.Permission, privateKey, password);
+        
+        logger.LogInformation("Success!");
+        
         applicationLifetime.StopApplication();
     }
 }

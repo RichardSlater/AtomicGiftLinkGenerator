@@ -25,7 +25,10 @@ public class DeleteWalletWorker(
 
         logger.LogInformation("Removing wallet for `{actor}` with permission `{permission}`",
             commandLineOptions.Actor, commandLineOptions.Permission);
+        
         await walletService.Remove(commandLineOptions.Actor, commandLineOptions.Permission);
+
+        logger.LogInformation("Success!");
 
         applicationLifetime.StopApplication();
     }

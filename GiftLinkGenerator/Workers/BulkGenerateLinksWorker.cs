@@ -22,8 +22,6 @@ public class BulkGenerateLinksWorker(
     protected override async Task ExecuteAsync(CancellationToken stoppingToken) {
         if (logger.IsEnabled(LogLevel.Information)) {
             logger.LogInformation("Worker running at: {time}", DateTimeOffset.Now);
-            applicationLifetime.StopApplication();
-            return;
         }
 
         if (commandLineOptions.Limit < 0) {
@@ -47,7 +45,17 @@ public class BulkGenerateLinksWorker(
 
         var limit = commandLineOptions.Limit > 0 ? commandLineOptions.Limit : int.MaxValue;
 
-        foreach (var asset in accountAssets.Take(limit)) {
+        var atomicAssets = accountAssets as AtomicAsset[] ?? accountAssets.ToArray();
+
+        if (!atomicAssets.Any()) {
+            logger.LogError("No assets matching {template} found in {account}", templateId, owner);
+            applicationLifetime.StopApplication();
+            return;
+        }
+        
+        logger.LogInformation("{n} NFTs matching {template} found in {account}", atomicAssets.Length, templateId, owner);
+
+        foreach (var asset in atomicAssets.Take(limit)) {
             logger.LogInformation("Processing template Asset# {asset}, Template: {template}: \"{name}\" #{mint}",
                 asset.AssetId, asset.TemplateId, asset.Name, asset.Mint);
 
@@ -106,7 +114,7 @@ public class BulkGenerateLinksWorker(
         logger.LogInformation("Generation completed, writing to output file: {output}", fullPath);
 
         await using (var writer = new StreamWriter(fullPath))
-        await using (var csv = new CsvWriter(writer, CultureInfo.InvariantCulture)) {
+        await using (var csv = new CsvWriter(writer, outputOptions.Value.RespectCulture ? CultureInfo.InvariantCulture : CultureInfo.CurrentCulture)) {
             await csv.WriteRecordsAsync(linkRecords, stoppingToken);
         }
 
