@@ -114,7 +114,7 @@ public class BulkGenerateLinksWorker(
         logger.LogInformation("Generation completed, writing to output file: {output}", fullPath);
 
         await using (var writer = new StreamWriter(fullPath))
-        await using (var csv = new CsvWriter(writer, outputOptions.Value.RespectCulture ? CultureInfo.InvariantCulture : CultureInfo.CurrentCulture)) {
+        await using (var csv = new CsvWriter(writer, outputOptions.Value.RespectCulture ? CultureInfo.CurrentCulture : CultureInfo.InvariantCulture)) {
             await csv.WriteRecordsAsync(linkRecords, stoppingToken);
         }
 
