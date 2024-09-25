@@ -17,9 +17,9 @@ Binaries are available for Windows, Mac and Linux from the [Releases](https://gi
 > Use a recent version of Powershell (pwsh) **not** Windows Powershell or `cmd`.
 
 ```powershell
-Invoke-WebRequest -Uri https://github.com/RichardSlater/AtomicGiftLinkGenerator/releases/download/v0.2.19/AtomicGiftLinkGenerator_0.2.19-win-x64.zip -OutFile AtomicGiftLinkGenerator_0.2.19-win-x64.zip
-Expand-Archive ./AtomicGiftLinkGenerator_0.2.19-win-x64.zip
-cd ./AtomicGiftLinkGenerator_0.2.19-win-x64
+Invoke-WebRequest -Uri https://github.com/RichardSlater/AtomicGiftLinkGenerator/releases/download/v0.2.20/AtomicGiftLinkGenerator_0.2.20-win-x64.zip -OutFile AtomicGiftLinkGenerator_0.2.20-win-x64.zip
+Expand-Archive ./AtomicGiftLinkGenerator_0.2.20-win-x64.zip
+cd ./AtomicGiftLinkGenerator_0.2.20-win-x64
 ./giftlinkgen generate
 ```
 
@@ -27,8 +27,8 @@ cd ./AtomicGiftLinkGenerator_0.2.19-win-x64
 
 ```bash
 mkdir atomicgiftlink && cd atomicgiftlink
-wget https://github.com/RichardSlater/AtomicGiftLinkGenerator/releases/download/v0.2.19/AtomicGiftLinkGenerator_0.2.19-linux-x64.tar.gz
-tar -xvzf ./AtomicGiftLinkGenerator_0.2.19-linux-x64.tar.gz
+wget https://github.com/RichardSlater/AtomicGiftLinkGenerator/releases/download/v0.2.20/AtomicGiftLinkGenerator_0.2.20-linux-x64.tar.gz
+tar -xvzf ./AtomicGiftLinkGenerator_0.2.20-linux-x64.tar.gz
 k
 ./giftlinkgen generate
 ```
