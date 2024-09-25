@@ -19,7 +19,7 @@ public class AtomicToolsClient(
     IOptions<WaxOptions> waxOptions,
     IOptions<AtomicAssetsOptions> atomicAssetsOptions,
     IHttpClientFactory httpClientFactory
-    ) : AtomicAssetHttpClientBase<AtomicToolsClient>(httpClientFactory, logger), IAtomicToolsClient {
+) : AtomicAssetHttpClientBase<AtomicToolsClient>(httpClientFactory, logger), IAtomicToolsClient {
     private readonly AtomicAssetsOptions _atomicAssetsOptions = atomicAssetsOptions.Value;
     private readonly ILogger<AtomicToolsClient> _logger = logger;
     private string? _privateKey;
@@ -42,66 +42,21 @@ public class AtomicToolsClient(
 
         try {
             var result = await wax.CreateTransaction(new Transaction { actions = actions });
-            _logger.LogInformation("Transaction broadcast: {txnId}", result);
+            LogNewTransaction(result);
 
             atomicGiftLink.TransactionId = result;
             atomicGiftLink.Status = LinkStatus.Announced;
         }
         catch (ApiErrorException ex) {
             atomicGiftLink.Status = LinkStatus.Failed;
-
-            foreach (var error in ex.error.details) {
-                switch (error.method) {
-                    case "validate_account_cpu_usage_estimate":
-                    case "validate_cpu_usage_to_bill":
-                    case "validate_account_cpu_usage":
-                    case "validate_ram_usage":
-                        _logger.LogCritical("{message}: {file}:{line} ({method})", error.message, error.file, error.line_number,
-                            error.method);
-                        throw new OutOfResourcesException($"{error.message}: {error.file}:{error.line_number} ({error.method})");
-                    default:
-                        _logger.LogError("{message}: {file}:{line} ({method})", error.message, error.file, error.line_number,
-                            error.method);
-                        break;
-                }
-            }
+            HandleApiErrorException(ex);
         }
         catch (ApiException ex) {
-            _logger.LogError("An API exception was thrown while cancelling the link: {content}", ex.Content);
+            _logger.LogError("An API exception was thrown while announcing the link: {content}", ex.Content);
             atomicGiftLink.Status = LinkStatus.Failed;
         }
 
         return atomicGiftLink;
-    }
-
-    private async Task<Eos> GetWaxConfigurator() {
-        var options = waxOptions.Value;
-        var pk = await GetPrivateKey(options);
-        return new(waxOptions.Value.GetConfigurator(pk));
-    }
-
-    private async Task<string> GetPrivateKey(WaxOptions options) {
-        if (_privateKey is not null) {
-            return _privateKey;
-        } 
-        
-        if (string.IsNullOrWhiteSpace(options.PrivateKey)) {
-            if (!await walletService.TestActor(options.Actor, options.Permission)) {
-                _logger.LogError("Private key was not available from either configuration nor the wallet.");
-                throw new InvalidOperationException();
-            }
-
-            var password = ConsolePasswordReader.Read("Enter password to unlock wallet:");
-            _privateKey = await walletService.GetPrivateKey(options.Actor, options.Permission, password);
-
-            if (_privateKey is not null) return _privateKey;
-            
-            _logger.LogError("Failed to get private key");
-            throw new InvalidOperationException();
-        }
-
-        _privateKey = options.PrivateKey;
-        return _privateKey;
     }
 
     public async Task<bool> CancelLink(AtomicToolsGiftLink atomicGiftLink) {
@@ -113,14 +68,11 @@ public class AtomicToolsClient(
 
         try {
             var result = await wax.CreateTransaction(new Transaction { actions = actions });
-            _logger.LogInformation("Transaction broadcast: {txnId}", result);
+            LogNewTransaction(result);
             return true;
         }
         catch (ApiErrorException ex) {
-            foreach (var error in ex.error.details)
-                _logger.LogError("{message}: {file}:{line} ({method})", error.message, error.file, error.line_number,
-                    error.method);
-
+            HandleApiErrorException(ex);
             return false;
         }
         catch (ApiException ex) {
@@ -139,6 +91,58 @@ public class AtomicToolsClient(
             Query = FormatQueryString(parameters)
         };
         return builder.Uri;
+    }
+
+    private void HandleApiErrorException(ApiErrorException ex) {
+        foreach (var error in ex.error.details)
+            switch (error.method) {
+                case "validate_account_cpu_usage_estimate":
+                case "validate_cpu_usage_to_bill":
+                case "validate_account_cpu_usage":
+                case "validate_ram_usage":
+                    _logger.LogCritical("{message}: {file}:{line} ({method})", error.message, error.file,
+                        error.line_number,
+                        error.method);
+                    throw new OutOfResourcesException(
+                        $"{error.message}: {error.file}:{error.line_number} ({error.method})");
+                default:
+                    _logger.LogError("{message}: {file}:{line} ({method})", error.message, error.file,
+                        error.line_number,
+                        error.method);
+                    break;
+            }
+    }
+
+    private void LogNewTransaction(string result) {
+        _logger.LogInformation("Transaction broadcast: https://waxblock.io/transaction/{txnId}", result);
+    }
+
+    private async Task<Eos> GetWaxConfigurator() {
+        var options = waxOptions.Value;
+        var pk = await GetPrivateKey(options);
+        return new Eos(waxOptions.Value.GetConfigurator(pk));
+    }
+
+    private async Task<string> GetPrivateKey(WaxOptions options) {
+        if (_privateKey is not null) return _privateKey;
+
+        if (string.IsNullOrWhiteSpace(options.PrivateKey)) {
+            if (!await walletService.TestActor(options.Actor, options.Permission)) {
+                _logger.LogError("Private key was not available from either configuration nor the wallet.");
+                throw new InvalidOperationException();
+            }
+
+            var password = ConsolePasswordReader.Read("Enter password to unlock wallet:");
+            _privateKey = await walletService.GetPrivateKey(options.Actor, options.Permission, password);
+
+            if (_privateKey is not null) return _privateKey;
+
+            _logger.LogError("Failed to get private key");
+            throw new InvalidOperationException();
+        }
+
+        _privateKey = options.PrivateKey;
+        return _privateKey;
     }
 
     private Action GetAnnounceLinkAction(AtomicToolsLinkRecord atomicToolsLinkRecord) {

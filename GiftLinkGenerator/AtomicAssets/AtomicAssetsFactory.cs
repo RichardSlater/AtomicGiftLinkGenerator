@@ -7,7 +7,7 @@ namespace GiftLinkGenerator.AtomicAssets;
 public class AtomicAssetsFactory : IAtomicAssetsFactory {
     private const string MissingData = "Missing Data";
     private const string AssetId = "asset_id";
-    private const string Mint = "mint";
+    private const string Mint = "template_mint";
     private const string Template = "template";
     private const string TemplateId = "template_id";
     private const string Name = "name";

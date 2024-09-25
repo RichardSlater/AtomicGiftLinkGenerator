@@ -20,9 +20,8 @@ public class WalletService(ICryptoService cryptoService) : IWalletService {
             PrivateKey = encryptedPrivateKey
         };
 
-        if (wallets.Any(x => x.Actor == actor && x.Permission == permission)) {
+        if (wallets.Any(x => x.Actor == actor && x.Permission == permission))
             wallets = wallets.Where(x => x.Actor != actor && x.Permission != permission).ToList();
-        }
 
         wallets.Add(wallet);
 
@@ -32,9 +31,8 @@ public class WalletService(ICryptoService cryptoService) : IWalletService {
     public async Task Remove(string actor, string permission) {
         var wallets = await ReadWallet();
 
-        if (wallets.Any(x => x.Actor == actor && x.Permission == permission)) {
+        if (wallets.Any(x => x.Actor == actor && x.Permission == permission))
             wallets = wallets.Where(x => x.Actor != actor && x.Permission != permission).ToList();
-        }
 
         await WriteWallet(wallets);
     }
@@ -44,30 +42,26 @@ public class WalletService(ICryptoService cryptoService) : IWalletService {
         var wallet = wallets.SingleOrDefault(x => x.Actor == actor && x.Permission == permission);
         return wallet == null ? string.Empty : cryptoService.Decrypt(wallet.PrivateKey, password);
     }
-    
+
     public async Task<bool> TestActor(string actor, string permission) {
         var wallets = await ReadWallet();
         return wallets.Any(x => x.Actor == actor && x.Permission == permission);
     }
-    
+
     private async Task<List<Wallet>> ReadWallet() {
-        if (!File.Exists(_walletFile)) {
-            return [];
-        }
-        
+        if (!File.Exists(_walletFile)) return [];
+
         await using var walletText = File.OpenRead(_walletFile);
         var walletJson = await JsonNode.ParseAsync(walletText);
         walletText.Close();
-        if (walletJson == null) {
-            return new List<Wallet>();
-        }
+        if (walletJson == null) return new List<Wallet>();
 
         return walletJson
             .AsArray()
             .Select(node => new Wallet {
                 Actor = node!["Actor"]!.GetValue<string>(),
                 Permission = node["Permission"]!.GetValue<string>(),
-                PrivateKey = node["PrivateKey"]!.GetValue<string>(),
+                PrivateKey = node["PrivateKey"]!.GetValue<string>()
             })
             .ToList();
     }
@@ -75,13 +69,9 @@ public class WalletService(ICryptoService cryptoService) : IWalletService {
     private async Task WriteWallet(List<Wallet> wallets) {
         var walletJson = JsonConvert.SerializeObject(wallets);
         var backupFile = $"{_walletFile}.bak";
-        if (File.Exists(backupFile)) {
-            File.Delete(backupFile);
-        }
+        if (File.Exists(backupFile)) File.Delete(backupFile);
 
-        if (File.Exists(_walletFile)) {
-            File.Move(_walletFile, backupFile);
-        }
+        if (File.Exists(_walletFile)) File.Move(_walletFile, backupFile);
 
         await File.WriteAllTextAsync(_walletFile, walletJson);
     }

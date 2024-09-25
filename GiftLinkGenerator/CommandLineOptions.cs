@@ -1,13 +1,15 @@
 ﻿using CommandLine;
+
 // ReSharper disable ClassNeverInstantiated.Global
 
 namespace GiftLinkGenerator;
 
-[Verb("generate", isDefault: true, HelpText = "Broadcasts links to the chain then generates gift links using public key cryptography.")]
+[Verb("generate", true,
+    HelpText = "Broadcasts links to the chain then generates gift links using public key cryptography.")]
 public class DefaultCommandLineOptions {
     [Option('l', "limit", Required = false, HelpText = "Maximum number of links to generate.")]
     public int Limit { get; set; }
-    
+
     [Option('t', "template", Required = false, HelpText = "The template to generate the gift links.")]
     public int TemplateId { get; set; }
 }

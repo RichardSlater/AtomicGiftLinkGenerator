@@ -1,4 +1,5 @@
 ﻿// SPDX-License-Identifier: MIT
+
 using System.Text.Json.Nodes;
 
 namespace GiftLinkGenerator.AtomicAssets;

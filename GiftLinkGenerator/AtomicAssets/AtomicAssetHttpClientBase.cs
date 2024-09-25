@@ -68,9 +68,7 @@ public abstract class AtomicAssetHttpClientBase<T>(IHttpClientFactory clientFact
             return node;
         }
 
-        if (exception is not null) {
-            throw exception;
-        }
+        if (exception is not null) throw exception;
 
         throw new InvalidOperationException("The call exceeded the retry limit, however no exception was recorded.");
     }

@@ -13,7 +13,7 @@ public class DeleteWalletWorker(
     protected override async Task ExecuteAsync(CancellationToken stoppingToken) {
         ArgumentException.ThrowIfNullOrWhiteSpace(commandLineOptions.Actor);
         ArgumentException.ThrowIfNullOrWhiteSpace(commandLineOptions.Permission);
-        
+
         await Task.Delay(TimeSpan.FromSeconds(0.5), stoppingToken);
 
         if (!await walletService.TestActor(commandLineOptions.Actor, commandLineOptions.Permission)) {
@@ -25,7 +25,7 @@ public class DeleteWalletWorker(
 
         logger.LogInformation("Removing wallet for `{actor}` with permission `{permission}`",
             commandLineOptions.Actor, commandLineOptions.Permission);
-        
+
         await walletService.Remove(commandLineOptions.Actor, commandLineOptions.Permission);
 
         logger.LogInformation("Success!");

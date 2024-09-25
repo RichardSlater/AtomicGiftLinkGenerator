@@ -63,9 +63,7 @@ Parser.Default
         builder.Services.AddSingleton<DeleteWalletCommandLineOptions>(_ => options);
     })
     .WithNotParsed(errors => {
-        foreach (var error in errors) {
-            Console.Error.WriteLine(error.ToString());
-        }
+        foreach (var error in errors) Console.Error.WriteLine(error.ToString());
     });
 
 var host = builder.Build();

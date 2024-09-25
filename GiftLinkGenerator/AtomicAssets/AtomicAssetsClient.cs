@@ -45,7 +45,7 @@ public class AtomicAssetsClient(
         var resourceUri = $"{_options.BaseUri}{_options.Endpoints.AtomicTools.Links}";
         Dictionary<string, string> parameters = new() {
             { "creator", creator },
-            { "state", string.Join(",", states.Select(x => ((int)x).ToString())) },
+            { "state", string.Join(",", states.Select(x => ((int)x).ToString())) }
         };
 
         if (after != default) parameters.Add("after", after.ToUnixTimeMilliseconds().ToString());

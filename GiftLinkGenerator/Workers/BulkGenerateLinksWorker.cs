@@ -20,16 +20,15 @@ public class BulkGenerateLinksWorker(
     IHostApplicationLifetime applicationLifetime
 ) : BackgroundService {
     protected override async Task ExecuteAsync(CancellationToken stoppingToken) {
-        if (logger.IsEnabled(LogLevel.Information)) {
+        if (logger.IsEnabled(LogLevel.Information))
             logger.LogInformation("Worker running at: {time}", DateTimeOffset.Now);
-        }
 
         if (commandLineOptions.Limit < 0) {
             logger.LogError("Invalid --limit, it should be greater than 0");
             applicationLifetime.StopApplication();
             return;
         }
-        
+
         await Task.Delay(TimeSpan.FromSeconds(0.5), stoppingToken);
 
         var templateId = commandLineOptions.TemplateId > 0
@@ -48,15 +47,17 @@ public class BulkGenerateLinksWorker(
         var atomicAssets = accountAssets as AtomicAsset[] ?? accountAssets.ToArray();
 
         if (!atomicAssets.Any()) {
-            logger.LogError("No assets matching {template} found in {account}", templateId, owner);
+            logger.LogError("No assets matching #{templateId} found in {account}", templateId, owner);
             applicationLifetime.StopApplication();
             return;
         }
-        
-        logger.LogInformation("{n} NFTs matching {template} found in {account}", atomicAssets.Length, templateId, owner);
+
+        logger.LogInformation("{n} AtomicAsset NFTs matching #{templateId} found in {account}", atomicAssets.Length,
+            templateId, owner);
 
         foreach (var asset in atomicAssets.Take(limit)) {
-            logger.LogInformation("Processing template Asset# {asset}, Template: {template}: \"{name}\" #{mint}",
+            logger.LogInformation(
+                "Processing Asset ID: #{asset}, Template: #{template}, Name: \"{name}\", Mint: #{mint}",
                 asset.AssetId, asset.TemplateId, asset.Name, asset.Mint);
 
             try {
@@ -73,18 +74,18 @@ public class BulkGenerateLinksWorker(
         logger.LogInformation("Pausing for 10 seconds to wait for indexer to run.");
         await Task.Delay(TimeSpan.FromSeconds(10), stoppingToken);
 
-        var links = await atomicAssetsClient.GetAccountLinks(owner, [LinkState.Created], startedAt, limit: 50,
-            cancellationToken: stoppingToken);
+        var links = await atomicAssetsClient.GetAccountLinks(owner, [LinkState.Created], startedAt, 50,
+            stoppingToken);
         var giftLinks = links as AtomicToolsGiftLink[] ?? links.ToArray();
 
         foreach (var linkRecord in linkRecords) {
             if (linkRecord.Status != LinkStatus.Announced) {
-                logger.LogWarning("The assetId ({assetId}) is in a failed state.", linkRecord.AssetId);
+                logger.LogWarning("The assetId (#{assetId}) is in a failed state.", linkRecord.AssetId);
                 continue;
             }
 
             if (!giftLinks.Any(gl => gl.Assets.Any(a => a.AssetId == linkRecord.AssetId))) {
-                logger.LogWarning("The assetId ({assetId}) was not found in the list of links, skipping.",
+                logger.LogWarning("The assetId (#{assetId}) was not found in the list of links, skipping.",
                     linkRecord.AssetId);
                 continue; // skip results that don't have links applied to them;
             }
@@ -94,7 +95,7 @@ public class BulkGenerateLinksWorker(
             linkRecord.LinkId = link.LinkId;
             linkRecord.Status = LinkStatus.Success;
 
-            logger.LogInformation("Asset ID#{assetId} has a Link Id {linkId}, generating private link.",
+            logger.LogInformation("Asset ID: #{assetId} has a Link Id: #{linkId}, generating private link.",
                 linkRecord.AssetId, link.LinkId);
 
             linkRecord.GiftLinkUri = atomicToolsClient.BuildGiftLinkUri(linkRecord.LinkId, linkRecord.GiftPrivateKey);
@@ -114,7 +115,10 @@ public class BulkGenerateLinksWorker(
         logger.LogInformation("Generation completed, writing to output file: {output}", fullPath);
 
         await using (var writer = new StreamWriter(fullPath))
-        await using (var csv = new CsvWriter(writer, outputOptions.Value.RespectCulture ? CultureInfo.CurrentCulture : CultureInfo.InvariantCulture)) {
+        await using (var csv = new CsvWriter(writer,
+                         outputOptions.Value.RespectCulture
+                             ? CultureInfo.CurrentCulture
+                             : CultureInfo.InvariantCulture)) {
             await csv.WriteRecordsAsync(linkRecords, stoppingToken);
         }
 
