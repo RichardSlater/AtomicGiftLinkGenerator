@@ -29,7 +29,6 @@ cd ./AtomicGiftLinkGenerator_0.2.23-win-x64
 mkdir atomicgiftlink && cd atomicgiftlink
 wget https://github.com/RichardSlater/AtomicGiftLinkGenerator/releases/download/v0.2.23/AtomicGiftLinkGenerator_0.2.23-linux-x64.tar.gz
 tar -xvzf ./AtomicGiftLinkGenerator_0.2.23-linux-x64.tar.gz
-k
 ./giftlinkgen generate
 ```
 
